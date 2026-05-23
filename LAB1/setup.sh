@@ -19,7 +19,11 @@ for u in student teacher; do
 done
 
 if ! id "operator" &>/dev/null; then
-    useradd -m -s /bin/bash operator
+    if getent group operator >/dev/null; then
+        useradd -m -s /bin/bash -g operator operator
+    else
+        useradd -m -s /bin/bash operator
+    fi
     echo "operator:12345678" | chpasswd
     chage -d 0 operator
 fi
