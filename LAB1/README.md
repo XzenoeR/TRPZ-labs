@@ -110,8 +110,8 @@ curl -H "Accept: application/json" http://<VM_IP>/notes/1
 
 ```bash
 # 1. Клонувати репозиторій
-git clone <URL репозиторію>
-cd <назва репозиторію>
+git clone https://github.com/XzenoeR/TRPZ-labs.git
+cd TRPZ-labs/LAB1
 
 # 2. Створити віртуальне середовище
 python3 -m venv venv
