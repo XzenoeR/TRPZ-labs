@@ -1,10 +1,11 @@
+import os
 import argparse
 import mariadb
 from datetime import datetime
 from flask import Flask, request, jsonify
+from werkzeug.serving import make_server
 
 app = Flask(__name__)
-
 db_config = {}
 
 def get_db_connection():
@@ -15,21 +16,6 @@ def get_db_connection():
         password=db_config['password'],
         database=db_config['database']
     )
-
-def init_db():
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS notes (
-            id INT AUTO_INCREMENT PRIMARY KEY,
-            title VARCHAR(255) NOT NULL,
-            content TEXT NOT NULL,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-    """)
-    conn.commit()
-    conn.close()
-
 
 @app.route('/health/alive', methods=['GET'])
 def health_alive():
@@ -44,10 +30,9 @@ def health_ready():
     except Exception as e:
         return f"Database error: {str(e)}", 500
 
-
 @app.route('/', methods=['GET'])
 def index():
-    html = """
+    html = '''
     <html>
         <head>
             <meta charset="UTF-8">
@@ -62,7 +47,7 @@ def index():
             </table>
         </body>
     </html>
-    """
+    '''
     return html, 200, {'Content-Type': 'text/html; charset=utf-8'}
 
 @app.route('/notes', methods=['GET', 'POST'])
@@ -117,14 +102,14 @@ def get_note(note_id):
         return jsonify({"error": "Note not found"}), 404
 
     if 'text/html' in accept_header:
-        html = f"""
+        html = f'''
         <html><head><meta charset='UTF-8'></head><body><table border='1'>
             <tr><th>ID</th><td>{note[0]}</td></tr>
             <tr><th>Title</th><td>{note[1]}</td></tr>
             <tr><th>Created At</th><td>{note[2]}</td></tr>
             <tr><th>Content</th><td>{note[3]}</td></tr>
         </table></body></html>
-        """
+        '''
         return html, 200, {'Content-Type': 'text/html; charset=utf-8'}
     else:
         created_at = note[2].isoformat() if isinstance(note[2], datetime) else str(note[2])
@@ -135,7 +120,6 @@ def get_note(note_id):
             "content": note[3]
         }
         return jsonify(result), 200
-
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Notes Service Web Application")
@@ -154,6 +138,14 @@ if __name__ == '__main__':
     db_config['password'] = args.db_pass
     db_config['database'] = args.db_name
     
-    init_db()
+    # Systemd socket activation detection
+    listen_fds = os.environ.get('LISTEN_FDS')
     
-    app.run(host='0.0.0.0', port=args.app_port)
+    if listen_fds and int(listen_fds) > 0:
+        # systemd passes sockets starting at fd 3
+        # Use make_server from Werkzeug to adopt the fd
+        server = make_server(host='127.0.0.1', port=args.app_port, app=app, fd=3)
+        server.serve_forever()
+    else:
+        # Fallback for manual running
+        app.run(host='127.0.0.1', port=args.app_port)
