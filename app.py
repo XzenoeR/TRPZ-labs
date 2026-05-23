@@ -5,12 +5,9 @@ from flask import Flask, request, jsonify
 
 app = Flask(__name__)
 
-
 db_config = {}
 
-
 def get_db_connection():
-    
     return mariadb.connect(
         host=db_config['host'],
         port=db_config['port'],
@@ -28,7 +25,7 @@ def init_db():
             title VARCHAR(255) NOT NULL,
             content TEXT NOT NULL,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
+        ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
     """)
     conn.commit()
     conn.close()
@@ -52,20 +49,21 @@ def health_ready():
 def index():
     html = """
     <html>
-        <head><title>Notes Service API</title></head>
+        <head>
+            <meta charset="UTF-8">
+            <title>Notes Service API</title>
+        </head>
         <body>
-            <h1>Available API Endpoints</h1>
+            <h1>Ендпоінти бізнес-логіки</h1>
             <table border="1">
-                <tr><th>Method</th><th>Endpoint</th><th>Description</th></tr>
-                <tr><td>GET</td><td>/health/alive</td><td>Liveness check</td></tr>
-                <tr><td>GET</td><td>/health/ready</td><td>Readiness check</td></tr>
-                <tr><td>GET, POST</td><td>/notes</td><td>Get all notes or create a new one</td></tr>
-                <tr><td>GET</td><td>/notes/&lt;id&gt;</td><td>Get specific note details</td></tr>
+                <tr><th>Метод</th><th>Ендпоінт</th></tr>
+                <tr><td>GET, POST</td><td>/notes</td></tr>
+                <tr><td>GET</td><td>/notes/&lt;id&gt;</td></tr>
             </table>
         </body>
     </html>
     """
-    return html, 200, {'Content-Type': 'text/html'}
+    return html, 200, {'Content-Type': 'text/html; charset=utf-8'}
 
 @app.route('/notes', methods=['GET', 'POST'])
 def handle_notes():
@@ -83,7 +81,7 @@ def handle_notes():
         conn.close()
         
         if 'text/html' in accept_header:
-            return "<html><body><h1>Note created successfully</h1></body></html>", 201, {'Content-Type': 'text/html'}
+            return "<html><head><meta charset='UTF-8'></head><body><h1>Нотатку успішно створено</h1></body></html>", 201, {'Content-Type': 'text/html; charset=utf-8'}
         return jsonify({"status": "success", "message": "Note created"}), 201
 
     elif request.method == 'GET':
@@ -94,11 +92,11 @@ def handle_notes():
         conn.close()
         
         if 'text/html' in accept_header:
-            html = "<html><body><table border='1'><tr><th>ID</th><th>Title</th></tr>"
+            html = "<html><head><meta charset='UTF-8'></head><body><table border='1'><tr><th>ID</th><th>Title</th></tr>"
             for note in notes:
                 html += f"<tr><td>{note[0]}</td><td>{note[1]}</td></tr>"
             html += "</table></body></html>"
-            return html, 200, {'Content-Type': 'text/html'}
+            return html, 200, {'Content-Type': 'text/html; charset=utf-8'}
         else:
             result = [{"id": note[0], "title": note[1]} for note in notes]
             return jsonify(result), 200
@@ -115,19 +113,19 @@ def get_note(note_id):
     
     if not note:
         if 'text/html' in accept_header:
-            return "<html><body><h1>Note not found</h1></body></html>", 404, {'Content-Type': 'text/html'}
+            return "<html><head><meta charset='UTF-8'></head><body><h1>Нотатку не знайдено</h1></body></html>", 404, {'Content-Type': 'text/html; charset=utf-8'}
         return jsonify({"error": "Note not found"}), 404
 
     if 'text/html' in accept_header:
         html = f"""
-        <html><body><table border='1'>
+        <html><head><meta charset='UTF-8'></head><body><table border='1'>
             <tr><th>ID</th><td>{note[0]}</td></tr>
             <tr><th>Title</th><td>{note[1]}</td></tr>
             <tr><th>Created At</th><td>{note[2]}</td></tr>
             <tr><th>Content</th><td>{note[3]}</td></tr>
         </table></body></html>
         """
-        return html, 200, {'Content-Type': 'text/html'}
+        return html, 200, {'Content-Type': 'text/html; charset=utf-8'}
     else:
         created_at = note[2].isoformat() if isinstance(note[2], datetime) else str(note[2])
         result = {
