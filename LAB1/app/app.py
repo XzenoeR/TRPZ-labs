@@ -3,7 +3,6 @@ import argparse
 import mariadb
 from datetime import datetime
 from flask import Flask, request, jsonify
-from werkzeug.serving import make_server
 
 app = Flask(__name__)
 db_config = {}
@@ -138,14 +137,5 @@ if __name__ == '__main__':
     db_config['password'] = args.db_pass
     db_config['database'] = args.db_name
     
-    # Systemd socket activation detection
-    listen_fds = os.environ.get('LISTEN_FDS')
-    
-    if listen_fds and int(listen_fds) > 0:
-        # systemd passes sockets starting at fd 3
-        # Use make_server from Werkzeug to adopt the fd
-        server = make_server(host='127.0.0.1', port=args.app_port, app=app, fd=3)
-        server.serve_forever()
-    else:
-        # Fallback for manual running
-        app.run(host='127.0.0.1', port=args.app_port)
+    # Запускаємо сервер на всіх інтерфейсах (0.0.0.0)
+    app.run(host='0.0.0.0', port=args.app_port)
