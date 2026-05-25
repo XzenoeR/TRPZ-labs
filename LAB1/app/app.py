@@ -68,6 +68,8 @@ def handle_notes():
         if 'text/html' in accept_header:
             html_resp = "<html><head><meta charset='UTF-8'></head><body><h1>Нотатку успішно створено</h1></body></html>"
             return html_resp, 201, {'Content-Type': 'text/html; charset=utf-8'}
+        
+        return jsonify({"status": "success", "message": "Note created"}), 201
 
     elif request.method == 'GET':
         conn = get_db_connection()
