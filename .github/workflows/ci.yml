@@ -116,3 +116,21 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+
+  deploy:
+    name: Deploy to Target Node
+    needs: build-and-push # Чекаємо, поки образ опиниться в GHCR
+    if: github.event_name == 'push'
+    runs-on: self-hosted # Використовуємо твій локальний Runner
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Copy docker-compose to Target Node
+        run: |
+          scp -o StrictHostKeyChecking=no LAB1/app/docker-compose.yml vboxuser@192.168.0.212:/opt/mywebapp/
+
+      - name: Restart application on Target Node
+        run: |
+          ssh -o StrictHostKeyChecking=no vboxuser@192.168.0.212 "sudo systemctl restart mywebapp.service"

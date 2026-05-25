@@ -1,4 +1,3 @@
----
 version: '3.8'
 
 services:
@@ -16,7 +15,7 @@ services:
     restart: unless-stopped
 
   web:
-    build: ./app
+    image: ghcr.io/xzenoer/trpz-labs/mywebapp:latest
     depends_on:
       - db
     networks:
