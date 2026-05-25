@@ -1,0 +1,47 @@
+name: CD Pipeline
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  deploy-and-verify:
+    name: Deploy and Verify
+    runs-on: self-hosted
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Copy files to Target Node
+        run: |
+          ssh -o StrictHostKeyChecking=no vboxuser@192.168.0.183 "mkdir -p /opt/mywebapp/nginx"
+          scp -o StrictHostKeyChecking=no LAB1/docker-compose.yml vboxuser@192.168.0.183:/opt/mywebapp/
+          scp -o StrictHostKeyChecking=no LAB1/nginx/nginx.conf vboxuser@192.168.0.183:/opt/mywebapp/nginx/
+
+      - name: Restart application on Target Node
+        timeout-minutes: 1
+        run: |
+          ssh -o StrictHostKeyChecking=no vboxuser@192.168.0.183 "sudo systemctl restart mywebapp.service"
+
+      - name: Verification (Health Check)
+        run: |
+          echo "Очікування запуску контейнерів..."
+          sleep 10
+
+          for i in {1..5}; do
+            # Відправляємо запит і отримуємо лише HTTP статус-код
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://192.168.0.183/)
+            
+            if [ "$STATUS" -eq 200 ]; then
+              echo "Верифікація пройдена! Nginx та Web-сервіс відповідають (HTTP 200)."
+              exit 0
+            fi
+            
+            echo "Спроба $i: Сервіс ще не готовий (Код $STATUS). Повтор через 5 секунд..."
+            sleep 5
+          done
+
+          echo "Помилка верифікації! Сервіс недоступний після перезапуску."
+          exit 1
