@@ -1,3 +1,5 @@
 Flask 
 mariadb 
 Werkzeug
+pytest
+pytest-cov
