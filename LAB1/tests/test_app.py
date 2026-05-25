@@ -60,3 +60,22 @@ def test_index_page(client):
     response = client.get('/')
     assert response.status_code == 200
     assert b"Notes Service API" in response.data
+
+
+@patch('app.get_db_connection')
+def test_get_notes_json(mock_get_db, client):
+    # Імітуємо з'єднання та курсор
+    mock_conn = MagicMock()
+    mock_cursor = MagicMock()
+    mock_get_db.return_value = mock_conn
+    mock_conn.cursor.return_value = mock_cursor
+    
+    # Імітуємо те, що база даних повертає список із двох нотаток
+    mock_cursor.fetchall.return_value = [(1, "First Note"), (2, "Second Note")]
+    
+    response = client.get('/notes')
+    
+    # Перевіряємо, що сервер відповів успішно і повернув правильний JSON
+    assert response.status_code == 200
+    expected_data = [{"id": 1, "title": "First Note"}, {"id": 2, "title": "Second Note"}]
+    assert response.get_json() == expected_data
