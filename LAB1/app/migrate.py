@@ -1,6 +1,7 @@
 import argparse
 import mariadb
 
+
 def init_db(host, port, user, password, database):
     conn = mariadb.connect(
         host=host,
@@ -22,6 +23,7 @@ def init_db(host, port, user, password, database):
     conn.close()
     print("Database migration completed successfully.")
 
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Notes Service Database Migration")
     parser.add_argument('--db-host', required=True)
@@ -30,5 +32,4 @@ if __name__ == '__main__':
     parser.add_argument('--db-pass', required=True)
     parser.add_argument('--db-name', required=True)
     args = parser.parse_args()
-    
     init_db(args.db_host, args.db_port, args.db_user, args.db_pass, args.db_name)

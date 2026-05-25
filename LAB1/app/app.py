@@ -56,21 +56,18 @@ def index():
 @app.route('/notes', methods=['GET', 'POST'])
 def handle_notes():
     accept_header = request.headers.get('Accept', '')
-
     if request.method == 'POST':
         data = request.get_json() if request.is_json else request.form
         title = data.get('title')
         content = data.get('content')
-        
         conn = get_db_connection()
         cursor = conn.cursor()
         cursor.execute("INSERT INTO notes (title, content) VALUES (?, ?)", (title, content))
         conn.commit()
         conn.close()
-        
         if 'text/html' in accept_header:
-            return "<html><head><meta charset='UTF-8'></head><body><h1>Нотатку успішно створено</h1></body></html>", 201, {'Content-Type': 'text/html; charset=utf-8'}
-        return jsonify({"status": "success", "message": "Note created"}), 201
+            html_resp = "<html><head><meta charset='UTF-8'></head><body><h1>Нотатку успішно створено</h1></body></html>"
+            return html_resp, 201, {'Content-Type': 'text/html; charset=utf-8'}
 
     elif request.method == 'GET':
         conn = get_db_connection()
@@ -78,7 +75,6 @@ def handle_notes():
         cursor.execute("SELECT id, title FROM notes")
         notes = cursor.fetchall()
         conn.close()
-        
         if 'text/html' in accept_header:
             html = "<html><head><meta charset='UTF-8'></head><body><table border='1'><tr><th>ID</th><th>Title</th></tr>"
             for note in notes:
@@ -93,17 +89,15 @@ def handle_notes():
 @app.route('/notes/<int:note_id>', methods=['GET'])
 def get_note(note_id):
     accept_header = request.headers.get('Accept', '')
-    
     conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute("SELECT id, title, created_at, content FROM notes WHERE id = ?", (note_id,))
     note = cursor.fetchone()
     conn.close()
-    
     if not note:
         if 'text/html' in accept_header:
-            return "<html><head><meta charset='UTF-8'></head><body><h1>Нотатку не знайдено</h1></body></html>", 404, {'Content-Type': 'text/html; charset=utf-8'}
-        return jsonify({"error": "Note not found"}), 404
+            html_resp = "<html><head><meta charset='UTF-8'></head><body><h1>Нотатку не знайдено</h1></body></html>"
+            return html_resp, 404, {'Content-Type': 'text/html; charset=utf-8'}
 
     if 'text/html' in accept_header:
         html = f'''
@@ -134,14 +128,10 @@ if __name__ == '__main__':
     parser.add_argument('--db-pass', required=True, help="MariaDB Password")
     parser.add_argument('--db-name', required=True, help="MariaDB Database Name")
     parser.add_argument('--app-port', type=int, default=5000, help="Application Port")
-    
     args = parser.parse_args()
-    
     db_config['host'] = args.db_host
     db_config['port'] = args.db_port
     db_config['user'] = args.db_user
     db_config['password'] = args.db_pass
     db_config['database'] = args.db_name
-    
-    # Запускаємо сервер на всіх інтерфейсах (0.0.0.0)
     app.run(host='0.0.0.0', port=args.app_port)
