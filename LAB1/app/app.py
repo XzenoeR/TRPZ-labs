@@ -1,4 +1,3 @@
-import os
 import argparse
 import mariadb
 from datetime import datetime
@@ -6,6 +5,7 @@ from flask import Flask, request, jsonify
 
 app = Flask(__name__)
 db_config = {}
+
 
 def get_db_connection():
     return mariadb.connect(
@@ -16,9 +16,11 @@ def get_db_connection():
         database=db_config['database']
     )
 
+
 @app.route('/health/alive', methods=['GET'])
 def health_alive():
     return "OK", 200
+
 
 @app.route('/health/ready', methods=['GET'])
 def health_ready():
@@ -28,6 +30,7 @@ def health_ready():
         return "OK", 200
     except Exception as e:
         return f"Database error: {str(e)}", 500
+
 
 @app.route('/', methods=['GET'])
 def index():
@@ -48,6 +51,7 @@ def index():
     </html>
     '''
     return html, 200, {'Content-Type': 'text/html; charset=utf-8'}
+
 
 @app.route('/notes', methods=['GET', 'POST'])
 def handle_notes():
@@ -85,6 +89,7 @@ def handle_notes():
             result = [{"id": note[0], "title": note[1]} for note in notes]
             return jsonify(result), 200
 
+
 @app.route('/notes/<int:note_id>', methods=['GET'])
 def get_note(note_id):
     accept_header = request.headers.get('Accept', '')
@@ -119,6 +124,7 @@ def get_note(note_id):
             "content": note[3]
         }
         return jsonify(result), 200
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Notes Service Web Application")

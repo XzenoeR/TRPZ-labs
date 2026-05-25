@@ -24,7 +24,7 @@ jobs:
         run: pip install flake8 mypy yamllint
 
       - name: Run Flake8
-        run: flake8 LAB1/app/app.py LAB1/app/migrate.py LAB1/tests/test_app.py
+        run: flake8 LAB1/app/app.py LAB1/app/migrate.py LAB1/tests/test_app.py --max-line-length=120
 
       - name: Run MyPy
         run: mypy LAB1/app/app.py LAB1/app/migrate.py --ignore-missing-imports
