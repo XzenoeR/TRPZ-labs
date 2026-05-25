@@ -119,9 +119,9 @@ jobs:
 
   deploy:
     name: Deploy to Target Node
-    needs: build-and-push # Чекаємо, поки образ опиниться в GHCR
+    needs: build-and-push
     if: github.event_name == 'push'
-    runs-on: self-hosted # Використовуємо твій локальний Runner
+    runs-on: self-hosted
 
     steps:
       - name: Checkout code
@@ -129,7 +129,7 @@ jobs:
 
       - name: Copy docker-compose to Target Node
         run: |
-          scp -o StrictHostKeyChecking=no LAB1/app/docker-compose.yml vboxuser@192.168.0.212:/opt/mywebapp/
+          scp -o StrictHostKeyChecking=no LAB1/docker-compose.yml vboxuser@192.168.0.212:/opt/mywebapp/
 
       - name: Restart application on Target Node
         run: |
