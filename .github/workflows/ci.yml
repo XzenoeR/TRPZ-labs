@@ -129,8 +129,10 @@ jobs:
 
       - name: Copy docker-compose to Target Node
         run: |
-          scp -o StrictHostKeyChecking=no LAB1/docker-compose.yml vboxuser@192.168.0.212:/opt/mywebapp/
+          ssh -o StrictHostKeyChecking=no vboxuser@192.168.0.183 "mkdir -p /opt/mywebapp/nginx"
+          scp -o StrictHostKeyChecking=no LAB1/docker-compose.yml vboxuser@192.168.0.183:/opt/mywebapp/
+          scp -o StrictHostKeyChecking=no LAB1/nginx/nginx.conf vboxuser@192.168.0.183:/opt/mywebapp/nginx/
 
       - name: Restart application on Target Node
         run: |
-          ssh -o StrictHostKeyChecking=no vboxuser@192.168.0.212 "sudo systemctl restart mywebapp.service"
+          ssh -o StrictHostKeyChecking=no vboxuser@192.168.0.183 "sudo systemctl restart mywebapp.service"
