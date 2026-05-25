@@ -30,7 +30,7 @@ jobs:
         run: mypy LAB1/app/app.py LAB1/app/migrate.py --ignore-missing-imports
 
       - name: Run Yamllint
-        run: yamllint LAB1/app/docker-compose.yml
+        run: yamllint LAB1/docker-compose.yml
 
       - name: Run Shellcheck
         uses: ludeeus/action-shellcheck@master
