@@ -54,3 +54,9 @@ def test_create_note_json(mock_get_db, client):
         "INSERT INTO notes (title, content) VALUES (?, ?)",
         ("Test Title", "Test Content")
     )
+
+
+def test_index_page(client):
+    response = client.get('/')
+    assert response.status_code == 200
+    assert b"Notes Service API" in response.data
