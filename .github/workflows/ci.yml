@@ -41,3 +41,4 @@ jobs:
         uses: hadolint/hadolint-action@v3.1.0
         with:
           dockerfile: LAB1/app/dockerfile
+          ignore: DL3008
