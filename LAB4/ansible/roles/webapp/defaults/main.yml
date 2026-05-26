@@ -1,0 +1,6 @@
+---
+# roles/webapp/defaults/main.yml
+webapp_db_user:     "app_user"
+webapp_db_password: "secureAppPass456!"
+webapp_db_name:     "mywebapp"
+webapp_port:        5000

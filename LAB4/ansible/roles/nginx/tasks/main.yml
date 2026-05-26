@@ -1,0 +1,54 @@
+---
+# roles/nginx/tasks/main.yml
+# Встановлення та налаштування nginx як reverse proxy
+
+- name: Install nginx
+  ansible.builtin.apt:
+    name: nginx
+    state: present
+
+- name: Remove default nginx site
+  ansible.builtin.file:
+    path: /etc/nginx/sites-enabled/default
+    state: absent
+  notify: Reload nginx
+
+- name: Deploy nginx site config from template
+  ansible.builtin.template:
+    src: mywebapp.conf.j2
+    dest: /etc/nginx/sites-available/mywebapp.conf
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Reload nginx
+
+- name: Enable nginx site
+  ansible.builtin.file:
+    src: /etc/nginx/sites-available/mywebapp.conf
+    dest: /etc/nginx/sites-enabled/mywebapp.conf
+    state: link
+  notify: Reload nginx
+
+- name: Validate nginx configuration
+  ansible.builtin.command:
+    cmd: nginx -t
+  changed_when: false
+
+- name: Allow HTTP through ufw
+  community.general.ufw:
+    rule: allow
+    port: "80"
+    proto: tcp
+
+- name: Ensure nginx is running and enabled
+  ansible.builtin.systemd:
+    name: nginx
+    state: started
+    enabled: true
+
+# ─── Handlers ─────────────────────────────────────────────────────────────────
+handlers:
+  - name: Reload nginx
+    ansible.builtin.systemd:
+      name: nginx
+      state: reloaded

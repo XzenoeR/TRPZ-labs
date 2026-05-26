@@ -1,0 +1,5 @@
+libvirt_uri      = "qemu:///system"
+storage_pool     = "default"
+ubuntu_image_url = "https://cloud-images.ubuntu.com/jammy/current/jammy-server-cloudimg-amd64.img"
+ansible_ssh_public_key = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIGlDbaYjkVnphScRAjLrxIu3Z5iSeyfKHEvtD9uk1LJh user@DESKTOP-IJSK5DF"
+student_ssh_public_key = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMfML00R3eQ0Epy7vNIdPrwAKQ8Do6ssk8YUDAxJ5YZq user@DESKTOP-IJSK5DF"

@@ -1,0 +1,39 @@
+# /etc/nginx/sites-available/mywebapp.conf
+# Генерується Ansible — не редагувати вручну!
+# Шаблон: roles/nginx/templates/mywebapp.conf.j2
+
+upstream webapp_backend {
+    # Застосунок слухає на localhost:5000 на VM1 (worker)
+    server 127.0.0.1:{{ webapp_port }};
+    keepalive 32;
+}
+
+server {
+    listen 0.0.0.0:80;
+    server_name _;
+
+    access_log /var/log/nginx/mywebapp_access.log;
+    error_log  /var/log/nginx/mywebapp_error.log;
+
+    # ─── Health endpoints (не проксіювати назовні) ──────────────────────────
+    # /health/* блокується ─ клієнти не повинні мати до них доступ
+    location /health {
+        return 404;
+    }
+
+    # ─── Основний reverse proxy ─────────────────────────────────────────────
+    location / {
+        proxy_pass         http://webapp_backend;
+        proxy_http_version 1.1;
+
+        proxy_set_header Host              $host;
+        proxy_set_header X-Real-IP         $remote_addr;
+        proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header Connection        "";
+
+        proxy_connect_timeout 10s;
+        proxy_send_timeout    30s;
+        proxy_read_timeout    30s;
+    }
+}

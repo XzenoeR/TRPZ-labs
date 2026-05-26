@@ -1,0 +1,8 @@
+---
+# roles/db/defaults/main.yml
+# Значення за замовчуванням — перевизначайте у group_vars або через -e
+
+mariadb_root_password: "secureRootPass123!"
+mariadb_db_name: "mywebapp"
+mariadb_app_user: "app_user"
+mariadb_app_password: "secureAppPass456!"

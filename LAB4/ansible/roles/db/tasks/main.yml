@@ -1,0 +1,79 @@
+---
+# roles/db/tasks/main.yml
+# Встановлення та налаштування MariaDB на VM2
+
+- name: Install MariaDB server
+  ansible.builtin.apt:
+    name:
+      - mariadb-server
+      - mariadb-client
+      - python3-pymysql       # потрібно для ansible mysql_* модулів
+    state: present
+
+- name: Deploy MariaDB config (bind to VM2 IP + localhost)
+  ansible.builtin.template:
+    src: 50-server.cnf.j2
+    dest: /etc/mysql/mariadb.conf.d/50-server.cnf
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Restart MariaDB
+
+- name: Ensure MariaDB is running and enabled
+  ansible.builtin.systemd:
+    name: mariadb
+    state: started
+    enabled: true
+
+# ─── Безпека root-акаунту ────────────────────────────────────────────────────
+- name: Set MariaDB root password and secure installation
+  community.mysql.mysql_user:
+    name: root
+    host_all: true
+    password: "{{ mariadb_root_password }}"
+    login_unix_socket: /var/run/mysqld/mysqld.sock
+    state: present
+  no_log: true
+
+- name: Remove anonymous MariaDB users
+  community.mysql.mysql_user:
+    name: ""
+    host_all: true
+    state: absent
+    login_user: root
+    login_password: "{{ mariadb_root_password }}"
+
+- name: Remove MariaDB test database
+  community.mysql.mysql_db:
+    name: test
+    state: absent
+    login_user: root
+    login_password: "{{ mariadb_root_password }}"
+
+# ─── Створення БД та користувача застосунку ──────────────────────────────────
+- name: Create application database
+  community.mysql.mysql_db:
+    name: "{{ mariadb_db_name }}"
+    state: present
+    login_user: root
+    login_password: "{{ mariadb_root_password }}"
+    encoding: utf8mb4
+    collation: utf8mb4_unicode_ci
+
+- name: Create application DB user (accessible from worker IP)
+  community.mysql.mysql_user:
+    name: "{{ mariadb_app_user }}"
+    password: "{{ mariadb_app_password }}"
+    priv: "{{ mariadb_db_name }}.*:ALL"
+    host: "{{ hostvars['worker']['ansible_host'] }}"
+    state: present
+    login_user: root
+    login_password: "{{ mariadb_root_password }}"
+  no_log: true
+
+# ─── Handler ─────────────────────────────────────────────────────────────────
+handlers:
+  - name: Restart MariaDB
+    ansible.builtin.systemd:
+      name: mariadb
+      state: restarted

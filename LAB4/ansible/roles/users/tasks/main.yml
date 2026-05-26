@@ -1,0 +1,69 @@
+---
+# roles/users/tasks/main.yml
+# Створення системних користувачів (крім ansible — він у cloud-init)
+
+# ─── Хеш пароля 12345678 (SHA-512) ──────────────────────────────────────────
+# Згенерований командою: python3 -c "import crypt; print(crypt.crypt('12345678', crypt.mksalt(crypt.METHOD_SHA512)))"
+# Для воспроізводжуваності використовуємо фіксований salt
+
+- name: Create teacher user (all VMs)
+  ansible.builtin.user:
+    name: teacher
+    comment: "Teacher - lab checker"
+    shell: /bin/bash
+    groups: sudo
+    append: true
+    password: "$6$rounds=4096$saltsaltsalt1234$Vca4F4HhwFaJbQE5KkELxgS7wz0LAfJrSmSPCBr4tVAWJ3jbNTTJA4FeP7tK8cqjbYvLvWL9a9cLuKvbLHHd."
+    update_password: on_create
+    create_home: true
+
+- name: Set teacher password (ensure correct hash)
+  ansible.builtin.user:
+    name: teacher
+    password: "{{ '12345678' | password_hash('sha512', 'teachersalt12345') }}"
+
+- name: Allow teacher sudo with password
+  ansible.builtin.copy:
+    dest: /etc/sudoers.d/teacher
+    content: |
+      # teacher може робити sudo але з паролем
+      teacher ALL=(ALL:ALL) ALL
+    mode: "0440"
+    validate: visudo -cf %s
+
+# ─── Користувачі тільки на worker VM ─────────────────────────────────────────
+- name: Create app system user (worker only)
+  ansible.builtin.user:
+    name: app
+    comment: "Web application system user"
+    shell: /usr/sbin/nologin
+    system: true
+    create_home: false
+  when: inventory_hostname in groups['workers']
+
+- name: Create operator user (worker only)
+  ansible.builtin.user:
+    name: operator
+    comment: "Operator - manages web app and nginx"
+    shell: /bin/bash
+    create_home: true
+    password: "{{ '12345678' | password_hash('sha512', 'operatorsalt123') }}"
+    update_password: on_create
+  when: inventory_hostname in groups['workers']
+
+- name: Configure operator sudo — only service management
+  ansible.builtin.copy:
+    dest: /etc/sudoers.d/operator
+    content: |
+      # operator може керувати тільки сервісами застосунку та nginx
+      operator ALL=(ALL) NOPASSWD: /bin/systemctl start mywebapp.service
+      operator ALL=(ALL) NOPASSWD: /bin/systemctl stop mywebapp.service
+      operator ALL=(ALL) NOPASSWD: /bin/systemctl restart mywebapp.service
+      operator ALL=(ALL) NOPASSWD: /bin/systemctl status mywebapp.service
+      operator ALL=(ALL) NOPASSWD: /bin/systemctl reload nginx
+      operator ALL=(ALL) NOPASSWD: /bin/systemctl start nginx
+      operator ALL=(ALL) NOPASSWD: /bin/systemctl stop nginx
+      operator ALL=(ALL) NOPASSWD: /bin/systemctl restart nginx
+    mode: "0440"
+    validate: visudo -cf %s
+  when: inventory_hostname in groups['workers']

@@ -1,0 +1,42 @@
+# /etc/systemd/system/mywebapp.service
+# Генерується Ansible — не редагувати вручну!
+# Шаблон: roles/webapp/templates/mywebapp.service.j2
+
+[Unit]
+Description=Notes Service Web Application
+Documentation=https://github.com/XzenoeR/TRPZ-labs/tree/main/LAB4
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=app
+Group=app
+WorkingDirectory=/opt/mywebapp
+
+# Запуск міграції перед стартом застосунку
+ExecStartPre=/opt/mywebapp/venv/bin/python /opt/mywebapp/migrate.py \
+    --db-host {{ hostvars['db']['ansible_host'] }} \
+    --db-port 3306 \
+    --db-user {{ webapp_db_user }} \
+    --db-pass {{ webapp_db_password }} \
+    --db-name {{ webapp_db_name }}
+
+# Запуск застосунку
+ExecStart=/opt/mywebapp/venv/bin/python /opt/mywebapp/app.py \
+    --db-host {{ hostvars['db']['ansible_host'] }} \
+    --db-port 3306 \
+    --db-user {{ webapp_db_user }} \
+    --db-pass {{ webapp_db_password }} \
+    --db-name {{ webapp_db_name }} \
+    --app-port {{ webapp_port }}
+
+Restart=on-failure
+RestartSec=5s
+
+# Безпека
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

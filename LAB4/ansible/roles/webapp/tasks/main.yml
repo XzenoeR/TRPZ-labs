@@ -1,0 +1,96 @@
+---
+# roles/webapp/tasks/main.yml
+# Розгортання Notes Service (Flask) на VM1
+
+- name: Install system dependencies for Python MariaDB connector
+  ansible.builtin.apt:
+    name:
+      - python3-venv
+      - python3-pip
+      - libmariadb3
+      - libmariadb-dev
+      - gcc
+      - pkg-config
+    state: present
+
+- name: Create application directory
+  ansible.builtin.file:
+    path: /opt/mywebapp
+    state: directory
+    owner: app
+    group: app
+    mode: "0755"
+
+- name: Copy application source files
+  ansible.builtin.copy:
+    src: "{{ item }}"
+    dest: "/opt/mywebapp/{{ item }}"
+    owner: app
+    group: app
+    mode: "0644"
+  loop:
+    - app.py
+    - migrate.py
+  notify: Restart webapp
+
+- name: Create Python virtual environment
+  ansible.builtin.command:
+    cmd: python3 -m venv /opt/mywebapp/venv
+    creates: /opt/mywebapp/venv/bin/activate
+  become: true
+  become_user: app
+
+- name: Install Python dependencies into venv
+  ansible.builtin.pip:
+    name:
+      - Flask
+      - mariadb
+      - Werkzeug
+    virtualenv: /opt/mywebapp/venv
+    state: present
+
+- name: Run database migration
+  ansible.builtin.command:
+    cmd: >
+      /opt/mywebapp/venv/bin/python /opt/mywebapp/migrate.py
+      --db-host {{ hostvars['db']['ansible_host'] }}
+      --db-port 3306
+      --db-user {{ webapp_db_user }}
+      --db-pass {{ webapp_db_password }}
+      --db-name {{ webapp_db_name }}
+  become: true
+  become_user: app
+  register: migrate_result
+  changed_when: "'Table created' in migrate_result.stdout or 'Migration' in migrate_result.stdout"
+
+- name: Deploy systemd service unit
+  ansible.builtin.template:
+    src: mywebapp.service.j2
+    dest: /etc/systemd/system/mywebapp.service
+    owner: root
+    group: root
+    mode: "0644"
+  notify:
+    - Reload systemd
+    - Restart webapp
+
+- name: Reload systemd daemon
+  ansible.builtin.systemd:
+    daemon_reload: true
+
+- name: Ensure webapp is running and enabled
+  ansible.builtin.systemd:
+    name: mywebapp.service
+    state: started
+    enabled: true
+
+# ─── Handlers ─────────────────────────────────────────────────────────────────
+handlers:
+  - name: Reload systemd
+    ansible.builtin.systemd:
+      daemon_reload: true
+
+  - name: Restart webapp
+    ansible.builtin.systemd:
+      name: mywebapp.service
+      state: restarted
